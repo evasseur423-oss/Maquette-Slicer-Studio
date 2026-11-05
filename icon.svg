@@ -1,0 +1,85 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#18191f"/>
+      <stop offset="100%" stop-color="#0a0b0d"/>
+    </linearGradient>
+    <linearGradient id="layerGrad1" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#3d424f"/>
+      <stop offset="100%" stop-color="#282b33"/>
+    </linearGradient>
+    <linearGradient id="layerGrad2" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#555c6d"/>
+      <stop offset="100%" stop-color="#3a3e4a"/>
+    </linearGradient>
+    <linearGradient id="layerGrad3" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#737c93"/>
+      <stop offset="100%" stop-color="#4e5464"/>
+    </linearGradient>
+    <linearGradient id="layerGrad4" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#a6b1cf"/>
+      <stop offset="100%" stop-color="#727c94"/>
+    </linearGradient>
+    <linearGradient id="summitGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#f59e0b"/>
+      <stop offset="100%" stop-color="#d97706"/>
+    </linearGradient>
+    <filter id="laserGlow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="3" result="blur" />
+      <feMerge>
+        <feMergeNode in="blur" />
+        <feMergeNode in="SourceGraphic" />
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- App Background Squircle -->
+  <rect x="32" y="32" width="448" height="448" rx="96" fill="url(#bgGrad)" stroke="#2b2c32" stroke-width="4"/>
+  <rect x="42" y="42" width="428" height="428" rx="86" fill="none" stroke="#ffffff" stroke-width="1" stroke-opacity="0.06"/>
+
+  <!-- Architectural Isometric Grid -->
+  <g stroke="#242730" stroke-width="1.5" stroke-dasharray="3,3" opacity="0.6">
+    <line x1="120" y1="360" x2="392" y2="202"/>
+    <line x1="156" y1="380" x2="428" y2="222"/>
+    <line x1="84" y1="340" x2="356" y2="182"/>
+    <line x1="392" y1="360" x2="120" y2="202"/>
+    <line x1="356" y1="380" x2="84" y2="222"/>
+    <line x1="428" y1="340" x2="156" y2="182"/>
+  </g>
+
+  <!-- Stepped Strata (Isometric Curves de Niveau) -->
+  <g transform="translate(0, 10)">
+    <!-- Layer 1 (Base stratum) -->
+    <path d="M 120,320 C 130,355 200,375 256,375 C 320,375 385,350 400,315 L 400,332 C 385,367 320,392 256,392 C 200,392 130,372 120,337 Z" fill="#1e2026" stroke="#2b2e38" stroke-width="2"/>
+    <path d="M 120,320 C 130,285 200,265 256,265 C 320,265 385,285 400,315 C 385,350 320,375 256,375 C 200,375 130,355 120,320 Z" fill="url(#layerGrad1)" stroke="#525866" stroke-width="2.5"/>
+
+    <!-- Layer 2 -->
+    <path d="M 145,285 C 155,315 210,332 256,332 C 305,332 360,312 372,282 L 372,298 C 360,328 305,348 256,348 C 210,348 155,331 145,301 Z" fill="#292c34" stroke="#3b3f4c" stroke-width="2"/>
+    <path d="M 145,285 C 155,255 210,238 256,238 C 305,238 360,255 372,282 C 360,312 305,332 256,332 C 210,332 155,315 145,285 Z" fill="url(#layerGrad2)" stroke="#6a7285" stroke-width="2.5"/>
+
+    <!-- Layer 3 -->
+    <path d="M 172,250 C 182,275 220,290 256,290 C 295,290 335,274 344,248 L 344,264 C 335,290 295,306 256,306 C 220,306 182,291 172,266 Z" fill="#363a45" stroke="#4c5262" stroke-width="2"/>
+    <path d="M 172,250 C 182,225 220,210 256,210 C 295,210 335,225 344,248 C 335,274 295,290 256,290 C 220,290 182,275 172,250 Z" fill="url(#layerGrad3)" stroke="#8e97af" stroke-width="2.5"/>
+
+    <!-- Layer 4 -->
+    <path d="M 200,215 C 208,235 235,248 256,248 C 280,248 310,234 316,214 L 316,229 C 310,249 280,263 256,263 C 235,263 208,250 200,230 Z" fill="#474d5b" stroke="#60677a" stroke-width="2"/>
+    <path d="M 200,215 C 208,195 235,182 256,182 C 280,182 310,195 316,214 C 310,234 280,248 256,248 C 235,248 208,235 200,215 Z" fill="url(#layerGrad4)" stroke="#b5bed4" stroke-width="2.5"/>
+
+    <!-- Layer 5: Topographic Summit & Laser Red contour line -->
+    <path d="M 226,180 C 232,194 246,203 256,203 C 268,203 284,193 288,180 L 288,192 C 284,205 268,215 256,215 C 246,215 232,206 226,192 Z" fill="#b45309" stroke="#92400e" stroke-width="2"/>
+    <path d="M 226,180 C 232,166 246,157 256,157 C 268,157 284,166 288,180 C 284,193 268,203 256,203 C 246,203 232,194 226,180 Z" fill="url(#summitGrad)" stroke="#fde68a" stroke-width="2.5"/>
+
+    <!-- Laser Cutting Line Indicator on top stratum -->
+    <path d="M 226,180 C 232,166 246,157 256,157 C 268,157 284,166 288,180 C 284,193 268,203 256,203 C 246,203 232,194 226,180 Z" fill="none" stroke="#ef4444" stroke-width="2" stroke-dasharray="6,4" filter="url(#laserGlow)"/>
+
+    <!-- Centroid Laser Crosshair Point -->
+    <circle cx="256" cy="180" r="3" fill="#ef4444"/>
+    <line x1="250" y1="180" x2="262" y2="180" stroke="#ef4444" stroke-width="1.5"/>
+    <line x1="256" y1="174" x2="256" y2="186" stroke="#ef4444" stroke-width="1.5"/>
+  </g>
+
+  <!-- Technical Axis and Scale Markings -->
+  <text x="64" y="80" fill="#9ca3af" font-family="'JetBrains Mono', monospace" font-size="14" font-weight="600" letter-spacing="2">MAQUETTE SLICER</text>
+  <text x="64" y="98" fill="#f59e0b" font-family="'JetBrains Mono', monospace" font-size="11" letter-spacing="1">ARCHITECTURAL STUDIO</text>
+  <text x="448" y="80" text-anchor="end" fill="#6b7280" font-family="'JetBrains Mono', monospace" font-size="12">1:200 // 1.5mm</text>
+</svg>

@@ -1,0 +1,109 @@
+{
+  "name": "maquette-slicer-studio",
+  "version": "1.0.0",
+  "description": "Studio professionnel de tranchage et fabrication de maquettes d'architecture physiques",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-builder --win nsis portable --x64",
+    "build:setup": "electron-builder --win nsis --x64",
+    "build:portable": "electron-builder --win portable --x64",
+    "build:mac": "electron-builder --mac dmg zip"
+  },
+  "keywords": [
+    "architecture",
+    "maquette",
+    "slicer",
+    "threejs",
+    "electron",
+    "laser-cutting",
+    "svg",
+    "dxf"
+  ],
+  "author": "Maquette Slicer Studio",
+  "license": "ISC",
+  "dependencies": {
+    "jspdf": "^4.2.1",
+    "jszip": "^3.10.2",
+    "leaflet": "^1.9.4",
+    "three": "^0.165.0"
+  },
+  "devDependencies": {
+    "electron": "^44.9.1",
+    "electron-builder": "^26.18.0"
+  },
+  "build": {
+    "appId": "com.maquetteslicer.studio",
+    "productName": "Maquette Slicer Studio",
+    "compression": "store",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "main.js",
+      "index.html",
+      "icon.png",
+      "icon.svg",
+      "icon.ico",
+      "src/**/*",
+      "!node_modules/three/src/**/*",
+      {
+        "from": "node_modules/three/examples/jsm",
+        "to": "node_modules/three/examples/jsm",
+        "filter": [
+          "**/*"
+        ]
+      }
+    ],
+    "win": {
+      "icon": "icon.ico",
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        }
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Maquette Slicer Studio",
+      "artifactName": "${productName} - Setup (${version}).${ext}"
+    },
+    "portable": {
+      "artifactName": "${productName} - Portable (${version}).${ext}"
+    },
+    "mac": {
+      "icon": "icon.png",
+      "category": "public.app-category.graphics-design",
+      "identity": null,
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "arm64",
+            "x64"
+          ]
+        },
+        {
+          "target": "zip",
+          "arch": [
+            "arm64",
+            "x64"
+          ]
+        }
+      ],
+      "artifactName": "${productName} - macOS-${arch} (${version}).${ext}"
+    }
+  }
+}

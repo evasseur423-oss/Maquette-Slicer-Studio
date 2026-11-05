@@ -1,0 +1,939 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Maquette Slicer Studio - Architecture & Fabrication</title>
+  <link rel="stylesheet" href="./src/css/app.css">
+  <link rel="stylesheet" href="./node_modules/leaflet/dist/leaflet.css">
+  <link rel="icon" type="image/svg+xml" href="./icon.svg">
+  <link rel="icon" type="image/png" href="./icon.png">
+
+  <!-- Guard UMD libraries against Electron CommonJS module/exports globals -->
+  <script>
+    if (typeof window.module === 'object') {
+      window.__electronModule = window.module;
+      window.module = undefined;
+    }
+    if (typeof window.exports === 'object') {
+      window.__electronExports = window.exports;
+      window.exports = undefined;
+    }
+  </script>
+
+  <!-- Leaflet Interactive Map Script -->
+  <script src="./node_modules/leaflet/dist/leaflet.js"></script>
+
+  <!-- Client-side ZIP & Vector PDF generation libraries -->
+  <script src="./node_modules/jszip/dist/jszip.min.js"></script>
+  <script src="./node_modules/jspdf/dist/jspdf.umd.min.js"></script>
+
+  <script>
+    if (window.__electronModule) {
+      window.module = window.__electronModule;
+    }
+    if (window.__electronExports) {
+      window.exports = window.__electronExports;
+    }
+  </script>
+
+  <!-- Three.js & Libraries ES Modules Import Map -->
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "./node_modules/three/build/three.module.js",
+      "three/addons/": "./node_modules/three/examples/jsm/",
+      "jszip": "./node_modules/jszip/dist/jszip.min.js",
+      "jspdf": "./node_modules/jspdf/dist/jspdf.es.min.js"
+    }
+  }
+  </script>
+</head>
+
+<body>
+  <div id="app-container">
+    <!-- Studio Header -->
+    <header class="app-header">
+      <div class="brand-section">
+        <img src="./icon.svg" class="brand-icon" alt="Maquette Slicer Icon">
+        <div class="brand-title">
+          <h1>Maquette Slicer Studio</h1>
+          <span>ARCHITECTURAL SLICING &amp; FABRICATION</span>
+        </div>
+      </div>
+
+      <!-- Main Viewport Mode Switcher -->
+      <div class="view-mode-tabs">
+        <button id="tab-mode-phys" class="tab-btn active accent-phys"
+          title="Visualiser la maquette physique extrudée en escalier">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
+            <polyline points="2 17 12 22 22 17"></polyline>
+            <polyline points="2 12 12 17 22 12"></polyline>
+          </svg>
+          Maquette Physique 3D
+        </button>
+
+        <button id="tab-mode-orig" class="tab-btn accent-orig"
+          title="Visualiser le maillage d'origine et les plans de coupe laser">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path
+              d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z">
+            </path>
+          </svg>
+          Modèle 3D Source
+        </button>
+
+        <button id="tab-mode-2d" class="tab-btn accent-2d"
+          title="Voir les planches de découpe 2D vectorielles prêtes pour le laser">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+            <line x1="3" y1="9" x2="21" y2="9"></line>
+            <line x1="9" y1="21" x2="9" y2="9"></line>
+          </svg>
+          Planches de Découpe 2D
+        </button>
+      </div>
+
+      <!-- Header Actions & Exports -->
+      <div class="header-actions">
+        <button id="btn-export-svg" class="btn-secondary"
+          title="Exporter le fichier vectoriel SVG combiné (Illustrator, Inkscape, Laser)">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+            <polyline points="7 10 12 15 17 10"></polyline>
+            <line x1="12" y1="15" x2="12" y2="3"></line>
+          </svg>
+          Export SVG
+        </button>
+
+        <button id="btn-export-dxf" class="btn-secondary" title="Exporter le fichier CAD DXF normé (AutoCAD, Rhino 3D)">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+            <polyline points="7 10 12 15 17 10"></polyline>
+            <line x1="12" y1="15" x2="12" y2="3"></line>
+          </svg>
+          Export DXF
+        </button>
+
+        <button id="btn-header-download-zip" class="btn-primary"
+          title="Télécharger toutes les planches de découpe laser dans une archive ZIP">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+            <polyline points="7 10 12 15 17 10"></polyline>
+            <line x1="12" y1="15" x2="12" y2="3"></line>
+          </svg>
+          Pack Planches (.zip)
+        </button>
+
+        <!-- Custom Dark Frameless Window Controls -->
+        <div class="window-controls" id="window-controls">
+          <button id="btn-win-fullscreen" class="win-btn" title="Plein écran (F11)">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="15 3 21 3 21 9"></polyline>
+              <polyline points="9 21 3 21 3 15"></polyline>
+              <line x1="21" y1="3" x2="14" y2="10"></line>
+              <line x1="3" y1="21" x2="10" y2="14"></line>
+            </svg>
+          </button>
+          <button id="btn-win-min" class="win-btn" title="Réduire">
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5">
+              <line x1="2" y1="6" x2="10" y2="6"></line>
+            </svg>
+          </button>
+          <button id="btn-win-max" class="win-btn" title="Restaurer / Agrandir">
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.4">
+              <rect x="2" y="2" width="8" height="8" rx="1"></rect>
+            </svg>
+          </button>
+          <button id="btn-win-close" class="win-btn win-btn-close" title="Fermer">
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5">
+              <line x1="2" y1="2" x2="10" y2="10"></line>
+              <line x1="10" y1="2" x2="2" y2="10"></line>
+            </svg>
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <!-- Workspace -->
+    <div class="app-workspace">
+      <!-- Left Control Panel & Calculator -->
+      <aside class="sidebar-panel">
+        <div class="sidebar-content">
+
+          <!-- Workflow Source Mode Switcher: Local 3D vs Online Topography MNT -->
+          <div class="source-mode-toggle">
+            <button id="source-mode-local" class="source-mode-btn active accent-local"
+              title="Import hors-ligne de fichiers 3D (STL, OBJ, GLTF, FBX) et modèles d'architecture">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242"></path>
+                <path d="M12 12v9"></path>
+                <path d="m8 17 4 4 4-4"></path>
+              </svg>
+              1. Fichiers 3D (Local)
+            </button>
+            <button id="source-mode-online" class="source-mode-btn accent-online"
+              title="Génération topographique en ligne via flux MNT altimétrique (Carte interactive)">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="2" y1="12" x2="22" y2="12"></line>
+                <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z">
+                </path>
+              </svg>
+              2. Relief MNT (En ligne)
+            </button>
+          </div>
+
+          <!-- PANEL 1: LOCAL 3D MODEL IMPORT & PRESETS (100% Hors-ligne) -->
+          <div id="panel-source-local" class="studio-card">
+            <div class="card-header">
+              <span class="card-title">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242"></path>
+                  <path d="M12 12v9"></path>
+                  <path d="m8 17 4 4 4-4"></path>
+                </svg>
+                Import Fichier 3D Local
+              </span>
+              <span id="mesh-info-badge" class="control-badge">Topographie</span>
+            </div>
+
+            <!-- Drag & Drop Zone -->
+            <div id="dropzone" class="dropzone-box" title="Glissez-déposez un fichier STL, OBJ, GLTF/GLB ou FBX">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--accent-amber)"
+                stroke-width="1.8">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                <polyline points="17 8 12 3 7 8"></polyline>
+                <line x1="12" y1="3" x2="12" y2="15"></line>
+              </svg>
+              <div class="dropzone-text">Glissez votre fichier 3D ici</div>
+              <div class="dropzone-subtext">STL, OBJ, GLTF, GLB, FBX ou <a href="#" id="link-browse"
+                  style="color:var(--accent-amber); text-decoration:underline;">parcourir</a></div>
+              <input type="file" id="file-input" accept=".stl,.obj,.gltf,.glb,.fbx" style="display:none;">
+            </div>
+
+            <!-- Built-in Presets -->
+            <div class="presets-group">
+              <span class="presets-label">Exemples d'Architecture Intégrés :</span>
+              <div class="preset-buttons">
+                <button id="preset-topo" class="preset-btn active"
+                  title="Topographie de terrain avec colline et plateau">Colline Relief</button>
+                <button id="preset-villa" class="preset-btn" title="Villa moderne à gradins et terrasses">Villa
+                  Gradins</button>
+                <button id="preset-amphi" class="preset-btn"
+                  title="Amphithéâtre urbain en gradins concentriques">Amphithéâtre</button>
+              </div>
+            </div>
+
+            <!-- Source Unit -->
+            <div class="control-row" style="margin-top:10px;">
+              <div class="control-label">
+                <span>Unité du fichier 3D source :</span>
+                <span id="unit-label" class="control-badge">Mètres (m)</span>
+              </div>
+              <div class="button-group-grid" style="grid-template-columns: repeat(3, 1fr);">
+                <button class="choice-btn active" data-unit="m">Mètres</button>
+                <button class="choice-btn" data-unit="cm">Centimètres</button>
+                <button class="choice-btn" data-unit="mm">Millimètres</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- PANEL 2: ONLINE TOPOGRAPHY MNT & LEAFLET MAP (Nécessite Internet) -->
+          <div id="panel-source-online" class="studio-card" style="display:none;">
+            <div class="card-header">
+              <span class="card-title">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"></polygon>
+                  <line x1="8" y1="2" x2="8" y2="18"></line>
+                  <line x1="16" y1="6" x2="16" y2="22"></line>
+                </svg>
+                Génération Topographique MNT
+              </span>
+              <span class="control-badge"
+                style="background:rgba(6,182,212,0.15); color:var(--accent-cyan); border-color:var(--accent-cyan);">Flux
+                Mondial</span>
+            </div>
+
+            <!-- Geocoding Search -->
+            <div class="topo-search-bar">
+              <input type="text" id="topo-search-input" class="topo-search-input"
+                placeholder="Rechercher une localité (ex. Chamonix, Annecy, Ventoux)..." autocomplete="off">
+              <button id="btn-topo-search" class="btn-secondary" style="padding:4px 10px;"
+                title="Lancer la recherche Nominatim">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="11" cy="11" r="8"></circle>
+                  <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                </svg>
+              </button>
+              <div id="topo-search-results" class="topo-search-results"></div>
+            </div>
+
+            <!-- Iconic Landscape Presets Chips -->
+            <div class="presets-label" style="margin-bottom:4px;">Sites Topographiques Remarquables :</div>
+            <div class="topo-presets-scroll" id="topo-presets-list">
+              <!-- Dynamically populated or static chips -->
+            </div>
+
+            <!-- Interactive Leaflet Map -->
+            <div class="topo-map-wrapper">
+              <div id="topo-map"></div>
+              <div class="map-badge-overlay" id="topo-coords-label">45.9237°N, 6.8694°E</div>
+            </div>
+
+            <!-- Geographical Bounding Box Dimensions -->
+            <div class="bbox-specs-grid">
+              <div class="bbox-spec-item">
+                <span class="bbox-spec-title">Largeur emprise</span>
+                <span class="bbox-spec-value" id="topo-footprint-width-label">800 m</span>
+              </div>
+              <div class="bbox-spec-item">
+                <span class="bbox-spec-title">Profondeur emprise</span>
+                <span class="bbox-spec-value" id="topo-footprint-depth-label">600 m</span>
+              </div>
+            </div>
+
+            <!-- Quick Footprint Bar -->
+            <div class="control-label" style="margin-bottom:4px;">
+              <span>Taille de l'emprise géographique :</span>
+            </div>
+            <div class="footprint-quick-bar">
+              <button class="footprint-btn" data-footprint="300">300 m</button>
+              <button class="footprint-btn" data-footprint="500">500 m</button>
+              <button class="footprint-btn active" data-footprint="800">800 m</button>
+              <button class="footprint-btn" data-footprint="1200">1.2 km</button>
+              <button class="footprint-btn" data-footprint="2000">2.0 km</button>
+            </div>
+
+            <!-- Vertical Exaggeration Slider -->
+            <div class="slider-container" style="margin-top:6px;">
+              <div class="slider-header">
+                <span class="control-label">Exagération verticale :</span>
+                <span id="topo-exagg-val" class="slider-val">1.0×</span>
+              </div>
+              <input type="range" id="topo-exagg-slider" class="studio-slider" min="1.0" max="3.0" step="0.25"
+                value="1.0">
+            </div>
+
+            <!-- Pedestal Base Margin Slider -->
+            <div class="slider-container" style="margin-top:4px;">
+              <div class="slider-header">
+                <span class="control-label">Socle MNT (Marge minimale) :</span>
+                <span id="topo-base-val" class="slider-val">0 m (Relief pur)</span>
+              </div>
+              <input type="range" id="topo-base-slider" class="studio-slider" min="0" max="25" step="1" value="0">
+            </div>
+
+            <!-- Progress Bar -->
+            <div class="progress-bar-container" id="topo-progress-bar">
+              <div class="progress-bar-fill" id="topo-progress-fill"></div>
+            </div>
+            <div class="progress-status-text" id="topo-progress-text">Téléchargement MNT...</div>
+
+            <!-- Generate MNT 3D Button -->
+            <button id="btn-generate-topo" class="btn-primary"
+              style="margin-top:8px; width:100%; justify-content:center;">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="2" y1="12" x2="22" y2="12"></line>
+                <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z">
+                </path>
+              </svg>
+              Générer Relief MNT &amp; Trancher
+            </button>
+          </div>
+
+          <!-- 3. PARAMÈTRES PHYSIQUES DE FABRICATION & DÉCOUPE LASER -->
+          <div class="studio-card">
+            <div class="card-header">
+              <span class="card-title">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+                  <line x1="8" y1="21" x2="16" y2="21"></line>
+                  <line x1="12" y1="17" x2="12" y2="21"></line>
+                </svg>
+                Paramètres de Fabrication Laser
+              </span>
+            </div>
+
+            <!-- Échelle de la maquette -->
+            <div class="control-row">
+              <div class="control-label">
+                <span>Échelle de la maquette :</span>
+                <span id="scale-badge" class="control-badge">1:200</span>
+              </div>
+              <div class="button-group-grid">
+                <button class="choice-btn" data-scale="100">1:100</button>
+                <button class="choice-btn active" data-scale="200">1:200</button>
+                <button class="choice-btn" data-scale="500">1:500</button>
+                <button class="choice-btn" data-scale="1000">1:1000</button>
+              </div>
+              <div class="custom-input-row" style="margin-top:4px;">
+                <span class="input-suffix">1 :</span>
+                <input type="number" id="custom-scale-input" class="studio-input" value="200" min="1" max="10000"
+                  placeholder="Échelle personnalisée">
+              </div>
+            </div>
+
+            <!-- Épaisseur réelle du matériau -->
+            <div class="control-row">
+              <div class="control-label">
+                <span>Épaisseur réelle du matériau :</span>
+                <span id="thickness-badge" class="control-badge">1.5 mm</span>
+              </div>
+              <div class="button-group-grid">
+                <button class="choice-btn" data-thick="1.0" title="Carton gris 1 mm">1.0 mm</button>
+                <button class="choice-btn active" data-thick="1.5" title="Carton gris standard 1.5 mm">1.5 mm</button>
+                <button class="choice-btn" data-thick="2.0" title="Carton épais 2 mm">2.0 mm</button>
+                <button class="choice-btn" data-thick="3.0" title="Contreplaqué / MDF 3 mm">3.0 mm</button>
+                <button class="choice-btn" data-thick="5.0" title="Contreplaqué 5 mm">5.0 mm</button>
+              </div>
+              <div class="custom-input-row" style="margin-top:4px;">
+                <input type="number" id="custom-thick-input" class="studio-input" value="1.5" min="0.2" max="50"
+                  step="0.1" placeholder="Épaisseur libre">
+                <span class="input-suffix">mm</span>
+              </div>
+            </div>
+
+            <!-- Pas altimétrique des courbes de niveau -->
+            <div class="control-row">
+              <div class="contour-mode-row">
+                <span class="control-label" style="margin-bottom:0;">Pas des courbes de niveau :</span>
+                <div class="mode-toggle-pill">
+                  <button id="btn-mode-step-material" class="mode-pill-btn active"
+                    title="Pas déterminé par l'épaisseur réelle du matériau">Lié Matériau</button>
+                  <button id="btn-mode-step-contour" class="mode-pill-btn"
+                    title="Pas altimétrique imposé (ex. 0.5m ou 1m)">Pas Imposé</button>
+                </div>
+              </div>
+
+              <!-- Fixed contour step selector (active when mode is contour) -->
+              <div id="contour-step-container" style="display:none; margin-top:4px;">
+                <div class="button-group-grid">
+                  <button class="choice-btn" data-step="0.5">0.5 m</button>
+                  <button class="choice-btn active" data-step="1.0">1.0 m</button>
+                  <button class="choice-btn" data-step="2.0">2.0 m</button>
+                  <button class="choice-btn" data-step="5.0">5.0 m</button>
+                </div>
+                <div class="custom-input-row" style="margin-top:4px;">
+                  <input type="number" id="custom-step-input" class="studio-input" value="1.0" min="0.1" max="100"
+                    step="0.1" placeholder="Pas libre">
+                  <span class="input-suffix">m / strate</span>
+                </div>
+              </div>
+              <div id="contour-step-info" style="font-size:11px; color:var(--text-muted); margin-top:4px;">
+                Élévation : <strong id="step-computed-label" style="color:var(--accent-cyan);">0.30 m</strong> par
+                strate découpée
+              </div>
+            </div>
+
+            <!-- Socle / Base de la maquette -->
+            <div class="control-row">
+              <div class="control-label">
+                <span>Socle / Base de maintien :</span>
+                <span id="base-mode-badge" class="control-badge">Relief pur (Sans socle)</span>
+              </div>
+              <div class="button-group-grid" style="grid-template-columns: repeat(3, 1fr);">
+                <button class="choice-btn active" id="btn-base-none" data-base="none"
+                  title="Tranchage direct du relief topographique sans socle artificiel">Relief pur</button>
+                <button class="choice-btn" id="btn-base-single" data-base="single"
+                  title="Une seule plaque de maintien à la base pour coller et repérer les strates">1 Plaque
+                  support</button>
+                <button class="choice-btn" id="btn-base-pedestal" data-base="pedestal"
+                  title="Conserver le socle complet sous la maquette">Socle complet</button>
+              </div>
+            </div>
+
+            <!-- Dimensions du plateau laser cible -->
+            <div class="control-row">
+              <div class="control-label">
+                <span>Plateau laser cible :</span>
+                <span id="laser-bed-badge" class="control-badge">600 × 400 mm</span>
+              </div>
+              <select id="laser-bed-select" class="studio-input" style="width:100%;">
+                <option value="LASER_600x400" selected>Laser 600 × 400 mm (Standard FabLab)</option>
+                <option value="LASER_900x600">Laser 900 × 600 mm (Grand format)</option>
+                <option value="LASER_1200x900">Laser 1200 × 900 mm (Atelier Pro)</option>
+                <option value="A3">Feuille A3 (420 × 297 mm)</option>
+                <option value="A2">Feuille A2 (594 × 420 mm)</option>
+                <option value="CUSTOM">Format Plateau Sur Mesure...</option>
+              </select>
+
+              <div id="custom-bed-inputs" class="laser-custom-inputs" style="display:none;">
+                <div class="custom-input-row">
+                  <input type="number" id="custom-bed-w" class="studio-input" value="600" min="100" max="3000"
+                    placeholder="Largeur">
+                  <span class="input-suffix">mm</span>
+                </div>
+                <div class="custom-input-row">
+                  <input type="number" id="custom-bed-h" class="studio-input" value="400" min="100" max="3000"
+                    placeholder="Hauteur">
+                  <span class="input-suffix">mm</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 4. REAL-TIME SUMMARY & NESTING EFFICIENCY CARD -->
+          <div class="summary-box">
+            <div class="summary-header">
+              <span class="summary-title">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                  <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                </svg>
+                Récapitulatif &amp; Imbrication Laser
+              </span>
+              <span class="control-badge" id="summary-scale-tag">1:200</span>
+            </div>
+
+            <div class="summary-stats-grid">
+              <div class="summary-stat-row">
+                <span class="stat-label">Dimensions maquette :</span>
+                <span id="stat-dimensions" class="stat-value highlight-amber">30.0 × 22.5 × 8.0 cm</span>
+              </div>
+              <div class="summary-stat-row">
+                <span class="stat-label">Dénivelé par strate :</span>
+                <span id="stat-elevation-per-layer" class="stat-value highlight-cyan">0.30 m par couche</span>
+              </div>
+              <div class="summary-stat-row">
+                <span class="stat-label">Total des couches :</span>
+                <span id="stat-total-layers" class="stat-value" style="font-size:14px; color:#fff;">53 strates</span>
+              </div>
+              <div class="summary-stat-row">
+                <span class="stat-label">Plateaux laser :</span>
+                <span id="stat-sheets-count" class="stat-value highlight-amber">2 planches (600×400)</span>
+              </div>
+              <div class="summary-stat-row">
+                <span class="stat-label">Rendement matière :</span>
+                <span id="stat-material-yield" class="stat-value stat-badge-yield">82% (18% chutes)</span>
+              </div>
+            </div>
+
+            <button id="btn-re-slice" class="btn-primary" style="margin-top:4px;">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="23 4 23 10 17 10"></polyline>
+                <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+              </svg>
+              Calculer le Tranchage &amp; Imbrication
+            </button>
+          </div>
+
+          <!-- 5. SECTION EXPORT DES PLANCHES DE DÉCOUPE LASER -->
+          <div class="studio-card export-card" id="export-section">
+            <div class="card-header">
+              <span class="card-title">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--accent-amber)"
+                  stroke-width="2">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                  <polyline points="7 10 12 15 17 10"></polyline>
+                  <line x1="12" y1="15" x2="12" y2="3"></line>
+                </svg>
+                Export Planches Laser
+              </span>
+              <span class="control-badge highlight-amber" id="export-sheets-badge">Planches prêtes</span>
+            </div>
+
+            <!-- Format Selector: SVG vs PDF Vectoriel -->
+            <div class="control-row">
+              <div class="control-label">
+                <span>Format de sortie des planches :</span>
+                <span id="export-format-badge" class="control-badge highlight-cyan">SVG Vectoriel</span>
+              </div>
+              <div class="button-group-grid" style="grid-template-columns: 1fr 1fr;">
+                <button class="choice-btn active" id="btn-format-svg" data-export-format="svg"
+                  title="Fichiers SVG individuels (planche_01.svg, etc.) calés au lit de découpe">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2"
+                    style="margin-right:4px;">
+                    <circle cx="12" cy="12" r="10"></circle>
+                  </svg>
+                  SVG Laser
+                </button>
+                <button class="choice-btn" id="btn-format-pdf" data-export-format="pdf"
+                  title="Fichiers PDF vectoriels à l'échelle 1:1 exacte (planche_01.pdf, etc.) sans marges ni pixellisation">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2"
+                    style="margin-right:4px;">
+                    <rect x="3" y="3" width="18" height="18" rx="2"></rect>
+                  </svg>
+                  PDF Vectoriel (1:1)
+                </button>
+              </div>
+            </div>
+
+            <!-- Progress & Loading Box (Shown during generation and compression) -->
+            <div class="export-progress-panel" id="export-progress-panel" style="display:none;">
+              <div class="export-progress-meta">
+                <span class="export-progress-status" id="export-progress-status">Génération des planches...</span>
+                <span class="export-progress-percent" id="export-progress-percent">0%</span>
+              </div>
+              <div class="progress-bar-container" style="display:block; margin-top:6px;">
+                <div class="progress-bar-fill" id="export-progress-fill" style="width:0%;"></div>
+              </div>
+            </div>
+
+            <!-- Main Action Button: Download all sheets in ZIP -->
+            <button id="btn-download-zip" class="btn-primary"
+              style="margin-top:10px; width:100%; justify-content:center; padding:10px 14px; font-weight:600; font-size:12.5px;"
+              title="Génère tous les plateaux laser et télécharge l'archive ZIP">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                <polyline points="7 10 12 15 17 10"></polyline>
+                <line x1="12" y1="15" x2="12" y2="3"></line>
+              </svg>
+              <span>Télécharger toutes les planches (.zip)</span>
+            </button>
+
+            <!-- Secondary Export Actions -->
+            <div class="export-actions-grid"
+              style="display:grid; grid-template-columns: 1fr 1fr; gap:6px; margin-top:8px;">
+              <button id="btn-export-current-single" class="btn-secondary"
+                style="font-size:10.5px; padding:6px 6px; justify-content:center;"
+                title="Télécharger uniquement la planche 2D actuellement affichée">
+                Planche active seule
+              </button>
+              <button id="btn-export-dxf-sidebar" class="btn-secondary"
+                style="font-size:10.5px; padding:6px 6px; justify-content:center;"
+                title="Exporter toutes les strates au format AutoCAD DXF">
+                Fichier DXF complet
+              </button>
+            </div>
+
+            <button id="btn-sidebar-edit-sheet" class="btn-secondary"
+              style="font-size:11px; padding:6px 8px; justify-content:center; margin-top:8px; width:100%; border-color:rgba(245, 158, 11, 0.4);"
+              title="Ouvrir le mode d'édition nodale 2D pour la planche active">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--accent-amber)" stroke-width="2"
+                style="margin-right:5px;">
+                <path d="M12 20h9"></path>
+                <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
+              </svg>
+              <span>Éditer la planche active (Nodal &amp; Couleurs)</span>
+            </button>
+          </div>
+
+          <!-- 5. 3D PHYSICAL INSPECTION & MATERIAL AMBIANCES -->
+          <div class="studio-card">
+            <div class="card-header">
+              <span class="card-title">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M2 12h20"></path>
+                  <path d="M20 12v8H4v-8"></path>
+                  <path d="M6 12V4h12v8"></path>
+                </svg>
+                Matériau &amp; Inspection 3D
+              </span>
+            </div>
+
+            <!-- Material Ambiances -->
+            <div class="control-row">
+              <div class="control-label">
+                <span>Ambiance de matériau :</span>
+              </div>
+              <div class="material-cards-grid">
+                <button class="material-card-btn active" data-mat="kraft"
+                  title="Carton Gris / Kraft recyclé avec chant foncé">
+                  <div class="material-swatch swatch-kraft"></div>
+                  <span class="material-name">Carton Gris</span>
+                </button>
+                <button class="material-card-btn" data-mat="balsa" title="Bois Balsa ou Contreplaqué bouleau clair">
+                  <div class="material-swatch swatch-balsa"></div>
+                  <span class="material-name">Bois Balsa</span>
+                </button>
+                <button class="material-card-btn" data-mat="museum" title="Carton Musée blanc pur mat">
+                  <div class="material-swatch swatch-museum"></div>
+                  <span class="material-name">Carton Musée</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Layer Inspection Slider -->
+            <div class="slider-container">
+              <div class="slider-header">
+                <span class="control-label">Inspection par couche :</span>
+                <span id="layer-slider-val" class="slider-val">Toutes les couches (53/53)</span>
+              </div>
+              <div style="display:flex; align-items:center; gap:8px;">
+                <input type="range" id="layer-slider" class="studio-slider" min="1" max="53" value="53">
+                <button id="btn-play-stack" class="icon-btn" style="width:28px; height:28px;"
+                  title="Animer l'empilement couche par couche">
+                  <svg id="play-icon" width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+                    <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            <!-- Exploded View Slider -->
+            <div class="slider-container">
+              <div class="slider-header">
+                <span class="control-label">Vue Éclatée (Décollement) :</span>
+                <span id="exploded-slider-val" class="slider-val">0 mm</span>
+              </div>
+              <input type="range" id="exploded-slider" class="studio-slider" min="0" max="25" step="0.5" value="0">
+            </div>
+
+            <!-- Isolate Toggle -->
+            <div style="display:flex; align-items:center; justify-content:space-between; margin-top:4px;">
+              <span class="control-label">Isoler la couche active :</span>
+              <input type="checkbox" id="isolate-toggle" style="cursor:pointer; accent-color:var(--accent-amber);">
+            </div>
+          </div>
+
+        </div>
+      </aside>
+
+      <!-- Center Viewport Area -->
+      <main class="viewport-container">
+        <!-- 3D Three.js Canvas Container -->
+        <div id="three-canvas-container"></div>
+
+        <!-- 2D Cut Sheet Canvas Container -->
+        <div id="twod-sheet-container">
+          <!-- 2D Top Toolbar -->
+          <div class="twod-toolbar">
+            <div class="twod-settings-bar">
+              <span class="presets-label" style="margin-right:4px;">Plateau Laser :</span>
+              <select id="sheet-format-select" class="studio-input" style="padding:4px 8px; width:auto;">
+                <option value="LASER_600x400" selected>Laser 600 × 400 mm</option>
+                <option value="LASER_900x600">Laser 900 × 600 mm</option>
+                <option value="LASER_1200x900">Laser 1200 × 900 mm</option>
+                <option value="A3">Feuille A3 (420 × 297 mm)</option>
+                <option value="A2">Feuille A2 (594 × 420 mm)</option>
+                <option value="A4">Feuille A4 (297 × 210 mm)</option>
+                <option value="CUSTOM">Format Sur Mesure...</option>
+              </select>
+
+              <div class="twod-layer-toggles">
+                <label class="twod-toggle-label" style="color:#ef4444;"
+                  title="Lignes rouges : découpe traversante des contours">
+                  <input type="checkbox" id="toggle-layer-cut" checked style="accent-color:#ef4444;">
+                  Découpe
+                </label>
+                <label class="twod-toggle-label" style="color:#3b82f6;"
+                  title="Lignes bleues : gravure des contours de guidage N+1 pour l'encollage">
+                  <input type="checkbox" id="toggle-layer-guides" checked style="accent-color:#3b82f6;">
+                  Repères (Bleu)
+                </label>
+                <label class="twod-toggle-label" style="color:#3b82f6;"
+                  title="Gravure des numéros de strates et croix de centrage">
+                  <input type="checkbox" id="toggle-layer-labels" checked style="accent-color:#3b82f6;">
+                  Numéros (#)
+                </label>
+              </div>
+            </div>
+
+            <!-- Pagination Bar -->
+            <div class="sheet-pagination-bar">
+              <button id="btn-prev-sheet" class="page-btn" title="Planche précédente">&larr; Préc.</button>
+              <select id="sheet-dropdown-select" class="studio-input"
+                style="padding:2px 6px; font-size:11px; height:26px; width:auto; max-width:170px; border-color:var(--border-main); color:var(--text-main);"
+                title="Sélectionner directement une planche"></select>
+              <span id="sheet-page-indicator" class="page-indicator" style="display:none;">Planche 1 / 1</span>
+              <button id="btn-next-sheet" class="page-btn" title="Planche suivante">Suiv. &rarr;</button>
+              <button id="btn-fit-sheet" class="page-btn" title="Recadrer la planche">Recadrer</button>
+
+              <button id="btn-open-sheet-editor" class="btn-primary"
+                style="padding:4px 10px; font-size:11px; margin-left:4px; white-space:nowrap; flex-shrink:0; background:linear-gradient(135deg, #f59e0b 0%, #d97706 100%); border-color:#f59e0b;"
+                title="Ouvrir le mode d'édition nodale et conventions laser pour cette planche">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M12 20h9"></path>
+                  <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
+                </svg>
+                <span>Éditer la planche</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- 2D Canvas -->
+          <canvas id="twod-canvas"></canvas>
+        </div>
+
+        <!-- Interactive 2D Sheet Editor Workbench -->
+        <div id="sheet-editor-workbench" class="sheet-editor-workbench" style="display:none;">
+          <!-- Editor Top Navigation & Action Bar -->
+          <div class="editor-top-bar">
+            <!-- Left: Sheet Identification & Selector -->
+            <div class="editor-bar-section">
+              <span class="editor-title-badge">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--accent-amber)"
+                  stroke-width="2">
+                  <path d="M12 20h9"></path>
+                  <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
+                </svg>
+                Mode Édition Nodal
+              </span>
+              <select id="editor-sheet-select" class="studio-input editor-select"
+                title="Changer de planche à éditer"></select>
+            </div>
+
+            <!-- Center: Interactive CAD Tools -->
+            <div class="editor-tools-group">
+              <button id="editor-tool-node" class="editor-tool-btn active"
+                title="Outil Nodal / Sélection (V) : Déplacer les points et sommets">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="12" cy="12" r="3"></circle>
+                  <path d="M12 3v6m0 6v6M3 12h6m6 0h6"></path>
+                </svg>
+                <span>Nœuds (V)</span>
+              </button>
+              <button id="editor-tool-add" class="editor-tool-btn"
+                title="Insérer un sommet (I / +) : Cliquer sur un segment pour insérer un nœud">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="12" cy="12" r="9"></circle>
+                  <line x1="12" y1="8" x2="12" y2="16"></line>
+                  <line x1="8" y1="12" x2="16" y2="12"></line>
+                </svg>
+                <span>Insérer Point</span>
+              </button>
+              <button id="editor-tool-pan" class="editor-tool-btn"
+                title="Navigation Pan (H / Espace) : Glisser le plan">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M18 11V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v0"></path>
+                  <path d="M14 10V4a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v2"></path>
+                  <path d="M10 10.5V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v8"></path>
+                  <path
+                    d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15">
+                  </path>
+                </svg>
+                <span>Pan (H)</span>
+              </button>
+            </div>
+
+            <!-- Color Palette (Laser Conventions) -->
+            <div class="editor-palette-group">
+              <span class="editor-group-label">Conventions Laser :</span>
+              <button id="editor-color-red" class="editor-color-btn active" data-color="#ff0000"
+                title="Découpe traversante complète (Rouge #FF0000 / Trait fin 0.1 mm)">
+                <span class="color-dot" style="background:#ef4444; box-shadow:0 0 6px rgba(239,68,68,0.6);"></span>
+                <span>Découpe (Rouge)</span>
+              </button>
+              <button id="editor-color-blue" class="editor-color-btn" data-color="#0000ff"
+                title="Gravure vectorielle fine / Repères d'empilement (Bleu #0000FF)">
+                <span class="color-dot" style="background:#3b82f6; box-shadow:0 0 6px rgba(59,130,246,0.6);"></span>
+                <span>Gravure (Bleu)</span>
+              </button>
+              <button id="editor-color-black" class="editor-color-btn" data-color="#000000"
+                title="Gravure surfacique / Numérotation (Noir #000000)">
+                <span class="color-dot"
+                  style="background:#111111; border:1px solid #64748b; box-shadow:0 0 6px rgba(255,255,255,0.2);"></span>
+                <span>Surfacique (Noir)</span>
+              </button>
+            </div>
+
+            <!-- History: Undo / Redo -->
+            <div class="editor-history-group">
+              <button id="editor-btn-undo" class="editor-icon-btn" title="Annuler (Ctrl+Z)" disabled>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M3 7v6h6"></path>
+                  <path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"></path>
+                </svg>
+              </button>
+              <button id="editor-btn-redo" class="editor-icon-btn" title="Rétablir (Ctrl+Y)" disabled>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M21 7v6h-6"></path>
+                  <path d="M3 17a9 9 0 0 1 9-9 9 9 0 0 1 6 2.3L21 13"></path>
+                </svg>
+              </button>
+            </div>
+
+            <!-- Actions: Reset & Validate -->
+            <div class="editor-actions-group">
+              <button id="editor-btn-reset" class="btn-secondary" style="font-size:11px; padding:5px 9px;"
+                title="Restaurer la planche initiale générée par le slicer">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="1 4 1 10 7 10"></polyline>
+                  <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path>
+                </svg>
+                <span>Réinitialiser</span>
+              </button>
+              <button id="editor-btn-save" class="btn-primary"
+                style="font-size:11px; padding:5px 12px; background:linear-gradient(135deg, #10b981 0%, #059669 100%); border-color:#10b981;"
+                title="Enregistrer les modifications pour l'export vectoriel">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="20 6 9 17 4 12"></polyline>
+                </svg>
+                <span>Valider</span>
+              </button>
+              <button id="editor-btn-close" class="editor-icon-btn" title="Fermer l'éditeur (Échap)">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <line x1="18" y1="6" x2="6" y2="18"></line>
+                  <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+              </button>
+            </div>
+          </div>
+
+          <!-- Editor Canvas -->
+          <canvas id="sheet-editor-canvas"></canvas>
+
+          <!-- Bottom HUD & Status Bar -->
+          <div class="editor-bottom-hud">
+            <div class="editor-hud-left">
+              <span id="editor-selection-info" class="editor-hud-badge">Planche 1 / 1</span>
+              <span class="editor-hud-tips">
+                <strong>Clic-glisser</strong> sommet &bull; <strong>Dbl-clic / Alt+clic</strong> insérer &bull;
+                <strong>Clic-droit / Suppr</strong> supprimer &bull; <strong>Molette</strong> zoom &bull;
+                <strong>Espace+clic</strong> pan
+              </span>
+            </div>
+            <div class="editor-hud-right">
+              <span id="editor-coords-indicator" class="editor-coords-badge">X: 0.0 mm | Y: 0.0 mm</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 3D Camera Controls Overlay -->
+        <div class="viewport-overlay-controls" id="viewport-3d-controls">
+          <button id="btn-view-iso" class="icon-btn" title="Vue Isométrique">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
+              <polyline points="2 17 12 22 22 17"></polyline>
+              <polyline points="2 12 12 17 22 12"></polyline>
+            </svg>
+          </button>
+          <button id="btn-view-top" class="icon-btn" title="Vue du Dessus (Plan masse)">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+              <circle cx="12" cy="12" r="3"></circle>
+            </svg>
+          </button>
+          <button id="btn-view-front" class="icon-btn" title="Vue de Face (Élévation)">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="3" y="5" width="18" height="14" rx="2" ry="2"></rect>
+              <line x1="3" y1="12" x2="21" y2="12"></line>
+            </svg>
+          </button>
+          <button id="btn-view-focus" class="icon-btn" title="Centrer la caméra sur la maquette">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"></circle>
+              <circle cx="12" cy="12" r="3"></circle>
+            </svg>
+          </button>
+        </div>
+
+        <!-- Bottom-Left Status Pill -->
+        <div class="viewport-info-pill">
+          <div class="info-item">Échelle : <span id="pill-scale">1:200</span></div>
+          <div class="info-item">Matériau : <span id="pill-thick">1.5 mm</span></div>
+          <div class="info-item">Strates : <span id="pill-layers">53</span></div>
+          <div class="info-item">Dimensions : <span id="pill-dims">30 × 22.5 × 8 cm</span></div>
+        </div>
+      </main>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="toast-notification">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+        <polyline points="22 4 12 14.01 9 11.01"></polyline>
+      </svg>
+      <span id="toast-message">Export SVG réalisé avec succès !</span>
+    </div>
+  </div>
+
+  <!-- Main Application Script (ES Module) -->
+  <script type="module" src="./src/js/app.js"></script>
+</body>
+
+</html>

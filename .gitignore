@@ -1,0 +1,32 @@
+# Dossiers de compilation et exécutables volumineux (Setup, Portable, DMG, etc.)
+dist/
+out/
+build/
+release/
+*.exe
+*.dmg
+*.pkg
+*.AppImage
+*.deb
+*.rpm
+*.blockmap
+*.nsis.7z
+*.7z
+
+# Dépendances Node.js (réinstallées automatiquement par npm ci / npm install sur GitHub)
+node_modules/
+
+# Fichiers temporaires et logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+*.log
+.DS_Store
+Thumbs.db
+
+# Environnement local & IDE
+.env
+.env.local
+.vscode/
+.idea/
+

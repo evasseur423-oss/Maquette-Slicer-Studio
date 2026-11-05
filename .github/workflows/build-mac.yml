@@ -1,0 +1,39 @@
+name: Build macOS Installer
+
+on:
+  push:
+    branches:
+      - main
+      - master
+  workflow_dispatch: # Permet de déclencher la compilation d'un clic dans l'onglet Actions
+
+jobs:
+  build-mac:
+    runs-on: macos-latest
+
+    steps:
+      - name: Récupérer le code
+        uses: actions/checkout@v4
+
+      - name: Installer Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+
+      - name: Installer les dépendances
+        run: npm ci || npm install
+
+      - name: Compiler pour macOS (Apple Silicon arm64 & Intel x64)
+        run: npx electron-builder --mac dmg zip --publish never
+        env:
+          # Désactive l'exigence de signature payante d'Apple lors de la compilation
+          CSC_IDENTITY_AUTO_DISCOVERY: false
+
+      - name: Sauvegarder les installateurs macOS (.dmg et .zip)
+        uses: actions/upload-artifact@v4
+        with:
+          name: Maquette-Slicer-Studio-macOS
+          path: |
+            dist/*.dmg
+            dist/*.zip
