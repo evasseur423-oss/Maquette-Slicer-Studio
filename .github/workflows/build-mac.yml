@@ -7,6 +7,9 @@ on:
       - master
   workflow_dispatch: # Permet de déclencher la compilation d'un clic dans l'onglet Actions
 
+permissions:
+  contents: write
+
 jobs:
   build-mac:
     runs-on: macos-latest
@@ -24,16 +27,51 @@ jobs:
       - name: Installer les dépendances
         run: npm ci || npm install
 
-      - name: Compiler pour macOS (Apple Silicon arm64 & Intel x64)
-        run: npx electron-builder --mac dmg zip --publish never
+      - name: Compiler pour macOS (.dmg Apple Silicon & Intel)
+        run: npx electron-builder --mac dmg --publish never
         env:
           # Désactive l'exigence de signature payante d'Apple lors de la compilation
           CSC_IDENTITY_AUTO_DISCOVERY: false
 
-      - name: Sauvegarder les installateurs macOS (.dmg et .zip)
+      - name: Sauvegarder l'artefact macOS (.dmg)
+        id: upload_dmg
         uses: actions/upload-artifact@v4
         with:
-          name: Maquette-Slicer-Studio-macOS
-          path: |
-            dist/*.dmg
-            dist/*.zip
+          name: Maquette-Slicer-Studio-macOS-DMG
+          path: dist/*.dmg
+          if-no-files-found: error
+
+      - name: Publier les liens de téléchargement direct (.dmg) dans GitHub Releases
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: latest-mac
+          name: "Maquette Slicer Studio — Installateurs macOS (.dmg)"
+          body: |
+            ### 🍎 Téléchargement direct pour macOS
+            - **Mac Apple Silicon (M1 / M2 / M3 / M4)** : `Maquette-Slicer-Studio-macOS-arm64.dmg`
+            - **Mac Intel** : `Maquette-Slicer-Studio-macOS-x64.dmg`
+          files: dist/*.dmg
+          prerelease: false
+          make_latest: true
+
+      - name: Afficher les boutons de téléchargement direct sur la page GitHub
+        run: |
+          ARM_URL="https://github.com/${{ github.repository }}/releases/download/latest-mac/Maquette-Slicer-Studio-macOS-arm64.dmg"
+          X64_URL="https://github.com/${{ github.repository }}/releases/download/latest-mac/Maquette-Slicer-Studio-macOS-x64.dmg"
+          ART_URL="${{ steps.upload_dmg.outputs.artifact-url }}"
+
+          echo "## ✅ Compilation macOS terminée avec succès !" >> $GITHUB_STEP_SUMMARY
+          echo "Cliquez directement sur l'un des liens ci-dessous pour lancer le téléchargement immédiat du fichier **.dmg** :" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Version macOS | Lien de téléchargement direct (1 clic) |" >> $GITHUB_STEP_SUMMARY
+          echo "| :--- | :--- |" >> $GITHUB_STEP_SUMMARY
+          echo "| 🍏 **Mac Apple Silicon (M1, M2, M3, M4)** | [📥 **Télécharger Maquette-Slicer-Studio-macOS-arm64.dmg**]($ARM_URL) |" >> $GITHUB_STEP_SUMMARY
+          echo "| 💻 **Mac Intel (x64)** | [📥 **Télécharger Maquette-Slicer-Studio-macOS-x64.dmg**]($X64_URL) |" >> $GITHUB_STEP_SUMMARY
+          echo "| 📦 **Archive complète (Artifact GitHub)** | [📥 **Télécharger l'artefact ZIP**]($ART_URL) |" >> $GITHUB_STEP_SUMMARY
+
+          echo "========================================================================"
+          echo " TELECHARGEMENT DIRECT IMMEDIAT (CLIQUEZ SUR LE LIEN CI-DESSOUS) :"
+          echo " -> Mac Apple Silicon (M1/M2/M3/M4) : $ARM_URL"
+          echo " -> Mac Intel (x64)                 : $X64_URL"
+          echo " -> Artifact GitHub                 : $ART_URL"
+          echo "========================================================================"
